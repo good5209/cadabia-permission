@@ -1,0 +1,2 @@
+// base export variable
+Cadabia = {};
