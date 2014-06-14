@@ -2,7 +2,7 @@
  * erase database permission collection
  */
 function clearPermission() {
-	if (Cadabia.Permission.COLLECTION._name == 'Permission_test') {
+	if (Cadabia.Permission.COLLECTION._name === 'Permission_test') {
 		Cadabia.Permission.COLLECTION.remove({});
 	} else {
 		throw 'Error: try remove collection "' + Cadabia.Permission.COLLECTION._name + '"';
@@ -464,11 +464,10 @@ Tinytest.add('Permission - checkPermission', function (test) {
 	perm1.newClass('class2');
 	test.equal(perm1.getPermission('class2'), dafaultPerm);
 	
-	// empty request
-	test.equal(perm1.checkPermission('class1', {}), {});
-	
 	var requestPerm = request(['class1'], ['class1'], ['class1']);
 	test.equal(perm1.checkPermission(requestPerm), requestPerm);
+	
+	test.equal(perm1.checkPermission({read : 'class1', write : 'class1', execute : 'class1'}), requestPerm);
 	
 	requestPerm = request(['class2'], ['class2'], ['class2']);
 	test.equal(perm1.checkPermission(requestPerm), requestPerm);
@@ -480,6 +479,24 @@ Tinytest.add('Permission - checkPermission', function (test) {
 	requestPerm = request(['class2', 'class1'], ['class1', 'class2'], ['class2', 'class1'])
 	test.equal(perm1.checkPermission(requestPerm),
 		request(['class1', 'class2'], ['class1', 'class2'], ['class1', 'class2']));
+	
+	// only keep exist class
+	requestPerm = request(['class1', 'not_exist_class'], ['not_exist_class', 'class2'], ['not_exist_class']);
+	test.equal(perm1.checkPermission(requestPerm), request(['class1'], ['class2'], null));
+	
+	// partial operation
+	requestPerm = request(['class1'], ['class1'], null);
+	test.equal(perm1.checkPermission(requestPerm), requestPerm);
+	
+	requestPerm = request(['class1'], null, ['class1']);
+	test.equal(perm1.checkPermission(requestPerm), requestPerm);
+	
+	requestPerm = request(null, ['class1'], ['class1']);
+	test.equal(perm1.checkPermission(requestPerm), requestPerm);
+	
+	// empty classes list
+	requestPerm = request(['class1'], [], ['class2']);
+	test.equal(perm1.checkPermission(requestPerm), request(['class1'], null, ['class2']));
 	
 	// another user
 	var perm2 = new Cadabia.Permission('user2');
@@ -515,6 +532,37 @@ Tinytest.add('Permission - checkPermission', function (test) {
 	// user3 in class2 group, class1 other role
 	test.equal(perm3.checkPermission(requestPerm),
 		request(['class1'], ['class2'], null));
+	
+	// user2 is class1 owner, class2 other role
+	perm1.changeOwner('class1', 'user2');
+	// user3 is class2 owner, class1 other role
+	perm1.changeOwner('class2', 'user3');
+	test.equal(perm2.checkPermission(requestPerm),
+		request(['class1'], ['class1'], ['class2']));
+	test.equal(perm3.checkPermission(requestPerm),
+		request(['class1'], ['class2'], ['class2']));
+	
+	// change class1, class2 owner to user1 and set allow all permissions
+	perm2.changeOwner('class1', 'user1');
+	perm3.changeOwner('class2', 'user1');
+	perm1.setPermission('class1', nToP('700'));
+	perm1.setPermission('class2', nToP('700'));
+	
+	// empty request
+	test.equal(perm1.checkPermission({}), {});
+	test.equal(perm1.checkPermission(null), {});
+	test.equal(perm1.checkPermission('class1'), {});
+	test.equal(perm1.checkPermission(0), {});
+	test.equal(perm1.checkPermission([0, 1, 2]), {});
+	test.equal(perm1.checkPermission({k : 'v'}), {});
+	
+	test.equal(perm1.checkPermission({read : null, write : 0, execute : true}), {});
+	requestPerm = {read : [null, 0, true], write : {k : 'v'}, execute : 'class1', not_supported_operation : 'class1'};
+	test.equal(perm1.checkPermission(requestPerm), request(null, null, ['class1']));
+	
+	// test cases mixed reorder operation, no exist class, miss type className, not supported operation
+	requestPerm = {write : [0, true, 'class2'], read : ['class1', 'not_exist_class', null, {k : 'v'}], not_supported_operation : ['class1']};
+	test.equal(perm1.checkPermission(requestPerm), request(['class1'], ['class2'], null));
 });
 
 Tinytest.add('Permission - userExist', function (test) {
