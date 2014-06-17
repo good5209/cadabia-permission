@@ -106,8 +106,7 @@ Permission.prototype.changeOwner = function (className, user) {
  */
 Permission.prototype.addGroupUser = function (className, users) {
 	var self = this;
-	var users = _.filter(
-		((_.isArray(users)) ? users : [users]),
+	var users = _.filter(((_.isArray(users)) ? users : [users]),
 		function (user) {
 			return _.isString(user) && Permission.userExist(user);
 		});
@@ -131,9 +130,7 @@ Permission.prototype.addGroupUser = function (className, users) {
  */
 Permission.prototype.removeGroupUser = function (className, users) {
 	var self = this;
-	var users = _.filter(
-		(_.isArray(users)) ? users : [users]
-		, _.isString);
+	var users = _.filter(((_.isArray(users)) ? users : [users]), _.isString);
 	if (!_.isEmpty(users)) {
 		return Permission.COLLECTION.update(
 			{class : className, 'owner.user' : self.username},
