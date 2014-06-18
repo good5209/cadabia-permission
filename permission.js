@@ -58,6 +58,20 @@ Permission.prototype.removeClass = function (className) {
 }
 
 /*
+ * get all classes which this user owned
+ * return owned class name string array
+ */
+Permission.prototype.getOwnClasses = function () {
+	var self = this;
+	var result = Permission.COLLECTION
+		.find(
+			{'owner.user' : self.username},
+			{sort : {'class' : 1}, fields : {'class' : 1}})
+		.map(function (each) {return each.class;});
+	return result;
+}
+
+/*
  * get class owner username
  * return owner username string, class not exist return null
  */
@@ -170,7 +184,6 @@ Permission.prototype.getPermission = function (className) {
 	}
 	return null;
 }
-	
 
 /*
  * set class permission
@@ -205,20 +218,6 @@ Permission.prototype.setPermission = function (className, permission) {
 			{$set : perms}) > 0;
 	}
 	return false;
-}
-
-/*
- * get all classes which this user owned
- * return owned class name string array
- */
-Permission.prototype.getOwnClasses = function () {
-	var self = this;
-	var result = Permission.COLLECTION
-		.find(
-			{'owner.user' : self.username},
-			{sort : {'class' : 1}, fields : {'class' : 1}})
-		.map(function (each) {return each.class;});
-	return result;
 }
 
 /*
